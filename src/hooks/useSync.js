@@ -1,0 +1,221 @@
+import { useEffect } from 'react';
+import db from '../utils/db';
+import { supabase } from '../utils/supabase';
+import toast from 'react-hot-toast';
+import { useTransactions } from './useTransactions';
+import { syncPendingRecords, retryFailedRecords } from '../sync/engine';
+
+const INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+
+export function useSync() {
+  const { setSyncStatus } = useTransactions();
+
+  useEffect(() => {
+    // -----------------------------------------------------------------------
+    // Reconnect handler — fire immediately when coming back online
+    // -----------------------------------------------------------------------
+    async function handleOnline() {
+      setSyncStatus('syncing');
+      try {
+        // Retry previously failed records first, then push any pending ones.
+        // This ensures phone-created records stuck in 'failed' sync on reconnect.
+        await retryFailedRecords();
+        await syncPendingRecords();
+        await pullFromCloud();
+        setSyncStatus('synced');
+        toast.success('Offline records synced to cloud!');
+      } catch (e) {
+        console.error('Auto-sync failed:', e);
+        setSyncStatus('error');
+      }
+    }
+
+    // -----------------------------------------------------------------------
+    // Interval sync — runs every 5 minutes while the app is open and online
+    // -----------------------------------------------------------------------
+    const intervalId = setInterval(async () => {
+      if (!navigator.onLine) return;
+      try {
+        // Retry failed records before processing new pending ones.
+        // Ensures records stuck in 'failed' (e.g. after network blip) are recovered.
+        await retryFailedRecords();
+        await syncPendingRecords();
+        await pullFromCloud();
+        setSyncStatus('synced');
+      } catch (e) {
+        console.warn('[useSync] Interval sync error:', e);
+        setSyncStatus('error');
+      }
+    }, INTERVAL_MS);
+
+    // -----------------------------------------------------------------------
+    // Hydration check: if DB is completely empty on boot, pull from cloud
+    // -----------------------------------------------------------------------
+    const checkAndHydrate = async () => {
+      try {
+        const hydrationState = localStorage.getItem('dawa_hydration_state') || 'idle';
+        if (hydrationState !== 'complete' && navigator.onLine) {
+          console.log(`[Hydration] State is '${hydrationState}'. Pulling FULL HISTORY from cloud...`);
+          await pullFromCloud(true); // fresh install — no date cap
+        }
+      } catch (error) {
+        console.error('Hydration check failed:', error);
+      }
+    };
+
+    checkAndHydrate();
+    window.addEventListener('online', handleOnline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      clearInterval(intervalId);
+    };
+  }, [setSyncStatus]);
+
+  // -------------------------------------------------------------------------
+  // syncNow — filters by sync_status:'pending' (more reliable than synced flag)
+  // -------------------------------------------------------------------------
+  async function syncNow() {
+    setSyncStatus('syncing');
+    try {
+      await syncPendingRecords();
+      setSyncStatus('synced');
+    } catch (e) {
+      console.error('[useSync] syncNow failed:', e);
+      setSyncStatus('error');
+      throw e;
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // retryFailed — resets all failed records back to pending and re-syncs
+  // -------------------------------------------------------------------------
+  async function retryFailed() {
+    setSyncStatus('syncing');
+    try {
+      await retryFailedRecords();
+      setSyncStatus('synced');
+      toast.success('Failed records retried successfully!');
+    } catch (e) {
+      console.error('[useSync] retryFailed error:', e);
+      setSyncStatus('error');
+      toast.error('Retry failed. Check your connection.');
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // pullFromCloud — full pull from Supabase → local IndexedDB
+  // -------------------------------------------------------------------------
+  async function pullFromCloud(fullHistory = false) {
+    try {
+      if (!navigator.onLine) return;
+
+      if (fullHistory) {
+        localStorage.setItem('dawa_hydration_state', 'running');
+      }
+      setSyncStatus('syncing');
+
+      const fetchAllRows = async (tableName, cursor = '1970-01-01T00:00:00.000Z') => {
+        const PAGE_SIZE = 1000;
+        let allData = [];
+        let from = 0;
+        while (true) {
+          const { data, error } = await supabase
+            .from(tableName)
+            .select('*')
+            .gt('updated_at', cursor)
+            .order('updated_at', { ascending: true })
+            .range(from, from + PAGE_SIZE - 1);
+          if (error) throw error;
+          allData = [...allData, ...(data || [])];
+          if (!data || data.length < PAGE_SIZE) break; // last page reached
+          from += PAGE_SIZE;
+        }
+        return allData;
+      };
+
+      let incData, expData, refData, configData, eventsData, eventTxData;
+      
+      const lastCursor = localStorage.getItem('dawa_last_sync_cursor') || '1970-01-01T00:00:00.000Z';
+      const fetchCursor = fullHistory ? '1970-01-01T00:00:00.000Z' : lastCursor;
+
+      [incData, expData, refData, configData, eventsData, eventTxData] = await Promise.all([
+        fetchAllRows('income', fetchCursor),
+        fetchAllRows('expenses', fetchCursor),
+        fetchAllRows('refreshments', fetchCursor),
+        fetchAllRows('app_config', fetchCursor),
+        fetchAllRows('events', fetchCursor),
+        fetchAllRows('event_transactions', fetchCursor),
+      ]);
+
+      const safeMerge = async (tableName, serverData, defaultStatus) => {
+        if (!serverData || serverData.length === 0) return;
+        await db.transaction('rw', db[tableName], async () => {
+          const pending = await db[tableName]
+            .filter(r => r.sync_status === 'pending' || r.synced === false)
+            .toArray();
+          const pendingIds = new Set(pending.map(r => r.id));
+
+          // --- Soft Delete propagation: remove tombstones locally ---
+          // UPDATE: Tombstone wins. Force delete even if pending locally.
+          const tombstones = serverData.filter(
+            r => r.is_deleted === true
+          );
+          for (const r of tombstones) {
+            await db[tableName].delete(r.id);
+          }
+
+          // --- Merge active records only ---
+          const toPut = serverData
+            .filter(r => r.is_deleted !== true && !pendingIds.has(r.id))
+            .map(r => ({
+              ...r,
+              paymentStatus: r.paymentStatus || defaultStatus,
+              synced: true,
+              sync_status: 'synced',
+            }));
+
+          if (toPut.length > 0) {
+            await db[tableName].bulkPut(toPut);
+          }
+        });
+      };
+
+      await safeMerge('income', incData, 'Received');
+      await safeMerge('expenses', expData, 'Paid');
+      await safeMerge('refreshments', refData, 'Paid');
+      await safeMerge('app_config', configData, null);
+      await safeMerge('events', eventsData, null);
+      await safeMerge('event_transactions', eventTxData, 'Paid');
+
+      // Calculate max updated_at across all received rows
+      let maxCursor = fetchCursor;
+      const allReceived = [...(incData || []), ...(expData || []), ...(refData || []), ...(configData || []), ...(eventsData || []), ...(eventTxData || [])];
+      for (const r of allReceived) {
+        if (r.updated_at && new Date(r.updated_at) > new Date(maxCursor)) {
+          maxCursor = r.updated_at;
+        }
+      }
+      const existingCursor = localStorage.getItem('dawa_last_sync_cursor') || '1970-01-01T00:00:00.000Z';
+      const finalCursor = new Date(maxCursor) > new Date(existingCursor) ? maxCursor : existingCursor;
+      localStorage.setItem('dawa_last_sync_cursor', finalCursor);
+
+      if (fullHistory) {
+        // Full-history hydration complete
+        localStorage.setItem('dawa_hydration_state', 'complete');
+        console.log('[Hydration] Full history pulled and stored in Dexie.');
+      }
+      
+      setSyncStatus('synced');
+      console.log('[Sync] Pull from cloud complete.');
+    } catch (e) {
+      if (fullHistory) {
+        localStorage.setItem('dawa_hydration_state', 'failed');
+      }
+      console.error('Failed to pull from cloud:', e);
+      setSyncStatus('error');
+    }
+  }
+
+  return { syncNow, pullFromCloud, retryFailed };
+}

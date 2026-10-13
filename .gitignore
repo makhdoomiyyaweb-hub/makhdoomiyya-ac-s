@@ -1,0 +1,47 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+.vercel
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Local/generated data and audit artifacts
+output/
+tmp/
+audit-artifacts/
+supabase/.temp/
+public/image/*Backup*.json
+public/image/*.csv
+public/image/*.pdf
+
+dist_electron
+dist_desktop
+win-unpacked
+build_log*.txt
+
+.vercel
