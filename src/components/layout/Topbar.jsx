@@ -1,9 +1,14 @@
-import { Menu, Cloud, CloudOff, CloudRain } from 'lucide-react';
+import React, { useState, lazy, Suspense } from 'react';
+import { Menu, Cloud, CloudOff, CloudRain, Sparkles } from 'lucide-react';
 import { formatDate, todayISO } from '../../utils/formatters';
 import { useTransactions } from '../../hooks/useTransactions';
+import AnalyticsErrorBoundary from '../analytics/AnalyticsErrorBoundary';
+
+const SmartAssistantModal = lazy(() => import('../analytics/SmartAssistantModal'));
 
 export default function Topbar({ title, onMenuClick }) {
   const { syncStatus } = useTransactions();
+  const [isAssistantOpen, setIsAssistantOpen] = useState(false);
 
   return (
     <header className="topbar h-16 bg-white border-b border-border flex items-center justify-between px-4 sm:px-6 sticky top-0 z-20">
@@ -40,10 +45,30 @@ export default function Topbar({ title, onMenuClick }) {
           )}
         </div>
 
+        <button
+          onClick={() => setIsAssistantOpen(true)}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-200 text-xs font-bold transition-all shadow-sm cursor-pointer"
+          title="സ്മാർട്ട് അസിസ്റ്റന്റ് & ഇൻസൈറ്റ്"
+        >
+          <Sparkles size={14} className="text-teal-600 animate-pulse" />
+          <span className="hidden sm:inline">സ്മാർട്ട് ഇൻസൈറ്റ്</span>
+        </button>
+
         <div className="text-sm font-medium text-muted bg-bg px-3 py-1.5 rounded-md border border-border hidden xs:block">
           {formatDate(todayISO())}
         </div>
       </div>
+
+      {isAssistantOpen && (
+        <AnalyticsErrorBoundary onClose={() => setIsAssistantOpen(false)}>
+          <Suspense fallback={null}>
+            <SmartAssistantModal
+              isOpen={isAssistantOpen}
+              onClose={() => setIsAssistantOpen(false)}
+            />
+          </Suspense>
+        </AnalyticsErrorBoundary>
+      )}
     </header>
   );
 }
