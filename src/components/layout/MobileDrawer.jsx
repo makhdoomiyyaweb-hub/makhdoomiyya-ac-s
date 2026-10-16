@@ -33,7 +33,7 @@ export default function MobileDrawer({ isOpen, onClose }) {
           </button>
         </div>
         
-        <nav className="flex-1 py-4 px-3 flex flex-col gap-1 overflow-y-auto">
+        <nav className="sidebar-nav-scroll flex-1 py-4 px-3 flex flex-col gap-1 overflow-y-auto">
           {navItems.map((item) => (
             <NavLink
               key={item.path}

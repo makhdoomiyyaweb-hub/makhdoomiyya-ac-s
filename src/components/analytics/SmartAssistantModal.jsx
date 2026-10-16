@@ -456,7 +456,7 @@ export default function SmartAssistantModal({ isOpen, onClose }) {
 
   return createPortal(
     <div
-      className={`assistant-overlay fixed inset-0 z-[100] flex flex-col sm:justify-center sm:items-center sm:p-5 font-malayalam ${activeTab === 'chat' ? 'bg-black/80 backdrop-blur-md' : 'bg-slate-950/70 backdrop-blur-sm'}`}
+      className={`assistant-overlay fixed inset-0 z-[100] flex flex-col sm:justify-center sm:items-center sm:p-5 font-malayalam bg-[#07110f] ${activeTab === 'chat' ? 'assistant-overlay-chat' : 'assistant-overlay-insights'}`}
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}

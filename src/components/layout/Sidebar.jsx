@@ -51,7 +51,7 @@ export default function Sidebar() {
         </div>
       </div>
       
-      <nav className="flex-1 py-6 px-3 flex flex-col gap-2 overflow-y-auto">
+      <nav className="sidebar-nav-scroll flex-1 py-6 px-3 flex flex-col gap-2 overflow-y-auto">
         {navItems.map((item) => (
           <React.Fragment key={item.path}>
             <NavLink

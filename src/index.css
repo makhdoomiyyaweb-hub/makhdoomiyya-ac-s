@@ -3,6 +3,58 @@
 @tailwind components;
 @tailwind utilities;
 
+.sidebar-nav-scroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.sidebar-nav-scroll::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.assistant-launcher {
+  position: fixed;
+  z-index: 80;
+  right: 24px;
+  bottom: max(24px, env(safe-area-inset-bottom, 0px));
+  display: grid;
+  width: 58px;
+  height: 58px;
+  place-items: center;
+  border: 1px solid rgba(134, 239, 172, 0.4);
+  border-radius: 50%;
+  color: #a7f3c1;
+  background: linear-gradient(145deg, #17623f, #0c3828);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28), 0 0 0 5px rgba(33, 120, 75, 0.12);
+  transition: transform 160ms ease, background 160ms ease, box-shadow 160ms ease;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.assistant-launcher:hover,
+.assistant-launcher:focus-visible {
+  transform: translateY(-2px);
+  color: #e2ffeb;
+  background: linear-gradient(145deg, #1d7a4e, #105238);
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.34), 0 0 0 6px rgba(33, 120, 75, 0.18);
+  outline: none;
+}
+
+@media (max-width: 767px) {
+  .assistant-launcher {
+    right: 16px;
+    bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+    width: 54px;
+    height: 54px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .assistant-launcher { transition: none; }
+}
+
 @layer base {
   :root {
     --color-primary: #00695C;        /* teal-800 — main brand */

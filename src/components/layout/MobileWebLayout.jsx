@@ -13,11 +13,11 @@ import {
   Plus,
   Minus,
   Lock,
-  CalendarDays,
-  Sparkles
+  CalendarDays
 } from 'lucide-react';
 import { useTransactions } from '../../hooks/useTransactions';
 import AnalyticsErrorBoundary from '../analytics/AnalyticsErrorBoundary';
+import AssistantLauncher from './AssistantLauncher';
 
 const SmartAssistantModal = lazy(() => import('../analytics/SmartAssistantModal'));
 
@@ -64,15 +64,6 @@ export default function MobileWebLayout() {
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Smart Assistant Mobile Button */}
-          <button
-            onClick={() => setIsAssistantOpen(true)}
-            className="p-2 bg-white/10 hover:bg-white/20 rounded-xl transition-colors text-teal-300 border border-white/10"
-            title="സ്മാർട്ട് അസിസ്റ്റന്റ് & ഇൻസൈറ്റ്"
-          >
-            <Sparkles size={18} className="animate-pulse" />
-          </button>
-
           {/* Sync Status Indicator */}
           <div className="flex items-center bg-black/20 px-2 py-1 rounded-full border border-white/10">
             {syncStatus === 'synced' && <Cloud size={14} className="text-green-400" />}
@@ -88,6 +79,8 @@ export default function MobileWebLayout() {
           </button>
         </div>
       </header>
+
+      <AssistantLauncher onClick={() => setIsAssistantOpen(true)} />
 
       {/* Main Content Area */}
       <main className="flex-1 overflow-y-auto pb-32 p-4 pt-4">

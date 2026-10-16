@@ -654,3 +654,66 @@
 @media (prefers-reduced-motion: reduce) {
   .assistant-thinking-dots i { animation: none; }
 }
+
+/* Give the AI chat the full app viewport; Insights keeps its existing modal layout. */
+.assistant-overlay.assistant-overlay-chat {
+  align-items: stretch;
+  justify-content: stretch;
+  padding: 0;
+}
+
+.assistant-overlay-chat .assistant-panel-chat {
+  width: 100%;
+  max-width: none;
+  height: 100vh;
+  height: 100dvh;
+  max-height: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.assistant-overlay-chat .assistant-message-list {
+  max-width: 1280px;
+  padding-right: 28px;
+  padding-left: 28px;
+}
+
+.assistant-overlay-chat .assistant-bubble-ai {
+  max-width: min(90%, 1040px);
+}
+
+.assistant-overlay-chat .assistant-bubble-user {
+  max-width: min(82%, 820px);
+}
+
+.assistant-overlay-chat .assistant-key-settings,
+.assistant-overlay-chat .assistant-suggestions,
+.assistant-overlay-chat .assistant-voice-status,
+.assistant-overlay-chat .assistant-input-row,
+.assistant-overlay-chat .assistant-composer-note {
+  width: min(100%, 1280px);
+}
+
+.assistant-overlay-chat .assistant-key-settings {
+  margin: 0 auto;
+}
+
+@media (min-width: 640px) {
+  .assistant-overlay-chat .assistant-composer {
+    padding-right: 32px;
+    padding-left: 32px;
+  }
+}
+
+@media (max-width: 639px) {
+  .assistant-overlay-chat .assistant-message-list {
+    padding-right: 14px;
+    padding-left: 14px;
+  }
+
+  .assistant-overlay-chat .assistant-bubble-ai,
+  .assistant-overlay-chat .assistant-bubble-user {
+    max-width: calc(100% - 45px);
+  }
+}
