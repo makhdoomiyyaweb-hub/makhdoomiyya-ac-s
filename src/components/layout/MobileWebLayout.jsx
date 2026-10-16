@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, lazy, Suspense } from 'react';
 import { Outlet, NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -13,9 +13,13 @@ import {
   Plus,
   Minus,
   Lock,
-  CalendarDays
+  CalendarDays,
+  Sparkles
 } from 'lucide-react';
 import { useTransactions } from '../../hooks/useTransactions';
+import AnalyticsErrorBoundary from '../analytics/AnalyticsErrorBoundary';
+
+const SmartAssistantModal = lazy(() => import('../analytics/SmartAssistantModal'));
 
 const navItems = [
   { name: 'Home', path: '/', icon: LayoutDashboard },
@@ -40,6 +44,7 @@ export default function MobileWebLayout() {
   const location = useLocation();
   const currentTitle = routeTitles[location.pathname] || 'MAKHDOOMIYYA';
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isAssistantOpen, setIsAssistantOpen] = useState(false);
   const { syncStatus } = useTransactions();
 
   return (
@@ -58,7 +63,16 @@ export default function MobileWebLayout() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          {/* Smart Assistant Mobile Button */}
+          <button
+            onClick={() => setIsAssistantOpen(true)}
+            className="p-2 bg-white/10 hover:bg-white/20 rounded-xl transition-colors text-teal-300 border border-white/10"
+            title="സ്മാർട്ട് അസിസ്റ്റന്റ് & ഇൻസൈറ്റ്"
+          >
+            <Sparkles size={18} className="animate-pulse" />
+          </button>
+
           {/* Sync Status Indicator */}
           <div className="flex items-center bg-black/20 px-2 py-1 rounded-full border border-white/10">
             {syncStatus === 'synced' && <Cloud size={14} className="text-green-400" />}
@@ -190,6 +204,17 @@ export default function MobileWebLayout() {
 
       {/* Safe Area Inset for iOS */}
       <div className="h-safe-area-bottom bg-white" />
+
+      {isAssistantOpen && (
+        <AnalyticsErrorBoundary onClose={() => setIsAssistantOpen(false)}>
+          <Suspense fallback={null}>
+            <SmartAssistantModal
+              isOpen={isAssistantOpen}
+              onClose={() => setIsAssistantOpen(false)}
+            />
+          </Suspense>
+        </AnalyticsErrorBoundary>
+      )}
     </div>
   );
 }
