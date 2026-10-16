@@ -673,6 +673,46 @@
   box-shadow: none;
 }
 
+/* Keep the controls, but reclaim chat space from the oversized stacked header. */
+.assistant-overlay-chat .assistant-header {
+  padding-top: max(8px, env(safe-area-inset-top, 0px));
+  padding-bottom: 10px;
+}
+
+.assistant-overlay-chat .assistant-tabs {
+  padding-top: 2px;
+}
+
+.assistant-overlay-chat .assistant-tabs > button {
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+
+.assistant-overlay-chat .assistant-context-bar {
+  padding: 6px 16px;
+  font-size: 11px;
+}
+
+.assistant-overlay-chat .assistant-quota {
+  padding: 4px 8px;
+}
+
+.assistant-overlay-chat .assistant-input-row {
+  padding: 7px;
+}
+
+.assistant-overlay-chat .assistant-textarea {
+  min-height: 50px;
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+
+.assistant-overlay-chat .assistant-action-button {
+  width: 46px;
+  height: 46px;
+  flex-basis: 46px;
+}
+
 .assistant-overlay-chat .assistant-message-list {
   max-width: 1280px;
   padding-right: 28px;
