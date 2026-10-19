@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useEvents, useEventDetail, useEventCategories } from '../hooks/useEvents';
 import { formatINR, formatDate, todayISO } from '../utils/formatters';
@@ -16,13 +16,20 @@ import StatusBadge from '../components/ui/StatusBadge';
 import DropdownMenu from '../components/ui/DropdownMenu';
 import SmartPrintPreview from '../components/documents/SmartPrintPreview';
 import EmptyState from '../components/ui/EmptyState';
+import RecordFilters from '../components/ui/RecordFilters';
+import EditTransactionModal from '../components/ui/EditTransactionModal';
+import { matchesRecord } from '../utils/recordFilters';
 
 import { ArrowLeft, TrendingUp, TrendingDown, Scale, Printer, MoreVertical, Trash2, CheckCircle, XCircle, CalendarDays, X } from 'lucide-react';
 
 export default function EventDetail() {
+  const [query, setQuery] = useState('');
+  const [dateRange, setDateRange] = useState(null);
+  const [editRecord, setEditRecord] = useState(null);
   const { eventId } = useParams();
   const navigate = useNavigate();
   const { event, transactions, summary, loading } = useEventDetail(eventId);
+  const filteredTransactions = useMemo(() => transactions.filter(record => matchesRecord(record, query, dateRange)), [transactions, query, dateRange]);
   const { addEventIncome, addEventExpense, deleteEventTransaction, updateEventTxStatus, archiveEvent, unarchiveEvent, deleteEvent } = useEvents();
   const { incomeCategories, expenseCategories, saveCustomCategory, deleteCustomCategory } = useEventCategories(eventId);
 
@@ -126,6 +133,7 @@ export default function EventDetail() {
           <DropdownMenu
             trigger={<button className="p-1.5 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100"><MoreVertical size={16} /></button>}
             items={[
+              { label: 'Edit', onClick: () => setEditRecord(r) },
               {
                 label: isPaid ? 'Mark as Pending' : (r.type === 'income' ? 'Mark as Received' : 'Mark as Paid'),
                 icon: isPaid ? XCircle : CheckCircle,
@@ -248,15 +256,17 @@ export default function EventDetail() {
           </div>
         </div>
         
-        {transactions.length > 0 ? (
-          <Table columns={columns} data={transactions} className="border-0 shadow-none rounded-none" />
+        <RecordFilters query={query} onQueryChange={setQuery} range={dateRange} onRangeChange={setDateRange} count={filteredTransactions.length} />
+        {filteredTransactions.length > 0 ? (
+          <Table columns={columns} data={filteredTransactions} className="border-0 shadow-none rounded-none" />
         ) : (
           <div className="p-10">
-            <EmptyState icon={Scale} title="No transactions yet" description="Add income or expense to track this event." />
+            <EmptyState icon={Scale} title={transactions.length ? 'No matching records' : 'No transactions yet'} description={transactions.length ? 'Try another date or search, or clear the filters.' : 'Add income or expense to track this event.'} />
           </div>
         )}
       </div>
 
+      {editRecord && <EditTransactionModal key={editRecord.id} record={editRecord} table="event_transactions" categories={editRecord.type === 'income' ? incomeCategories : expenseCategories} onClose={() => setEditRecord(null)} />}
       <Modal isOpen={!!activeModal} onClose={closeModal} title={`Add Event ${activeModal === 'income' ? 'Income' : 'Expense'}`}>
         <form onSubmit={handleAddSubmit} className="space-y-4 mt-4">
           <DatePicker label="Date" value={date} onChange={setDate} required />

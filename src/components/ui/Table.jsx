@@ -34,7 +34,7 @@ export default function Table({ columns, data, className = '' }) {
           </thead>
           <tbody className="bg-white divide-y divide-border">
             {visibleData.map((row, rowIndex) => (
-              <tr key={rowIndex} className={rowIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+              <tr key={row.id ?? rowIndex} data-record-id={row.id} className={rowIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                 {columns.map((col, colIndex) => (
                   <td key={colIndex} className={`px-6 py-4 whitespace-nowrap text-sm text-text ${col.tdClassName || ''}`}>
                     {col.render ? col.render(row, rowIndex) : row[col.key]}
@@ -49,7 +49,7 @@ export default function Table({ columns, data, className = '' }) {
       {/* Mobile Activity List View */}
       <div className="md:hidden space-y-3 p-4 bg-bg">
         {visibleData.map((row, rowIndex) => (
-          <div key={rowIndex} className="p-4 bg-white rounded-2xl shadow-sm flex items-center justify-between active:scale-[0.98] transition-all">
+          <div key={row.id ?? rowIndex} data-record-id={row.id} className="p-4 bg-white rounded-2xl shadow-sm flex items-center justify-between active:scale-[0.98] transition-all">
             <div className="flex items-center gap-3 min-w-0">
               <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${row.type === 'income' ? 'bg-green-50 text-green-500' : 'bg-red-50 text-red-500'}`}>
                 {row.type === 'income' ? (

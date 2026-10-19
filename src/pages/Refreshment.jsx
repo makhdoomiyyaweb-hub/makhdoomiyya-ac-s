@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useTransactions } from '../hooks/useTransactions';
 import { useForm } from '../hooks/useForm';
 import { REFRESHMENT_ITEMS, PAYMENT_STATUS } from '../constants/categories';
@@ -16,9 +16,16 @@ import Modal from '../components/ui/Modal';
 import EmptyState from '../components/ui/EmptyState';
 import StatusBadge from '../components/ui/StatusBadge';
 import DropdownMenu from '../components/ui/DropdownMenu';
+import RecordFilters from '../components/ui/RecordFilters';
+import EditTransactionModal from '../components/ui/EditTransactionModal';
+import { matchesRecord } from '../utils/recordFilters';
 
 export default function Refreshment() {
+  const [query, setQuery] = useState('');
+  const [dateRange, setDateRange] = useState(null);
+  const [editRecord, setEditRecord] = useState(null);
   const { refreshments, addRefreshment, deleteRecord, updatePaymentStatus, totalRefreshment } = useTransactions();
+  const filteredRefreshments = useMemo(() => refreshments.filter(record => matchesRecord(record, query, dateRange)), [refreshments, query, dateRange]);
   const [deleteId, setDeleteId] = useState(null);
   const [paymentId, setPaymentId] = useState(null);
 
@@ -60,6 +67,7 @@ export default function Refreshment() {
       label: 'Actions', 
       render: (r) => (
         <DropdownMenu>
+          <Button variant="ghost" onClick={() => setEditRecord(r)} className="w-full !justify-start !text-text">Edit</Button>
           <Button variant="secondary" onClick={() => setPaymentId(r)} className="w-full !justify-start !border-0 !shadow-none !bg-transparent hover:!bg-gray-100 !text-gray-700">
             {(r.paymentStatus === 'Paid' || !r.paymentStatus) ? 'Mark Pending' : 'Mark Paid'}
           </Button>
@@ -120,13 +128,15 @@ export default function Refreshment() {
           </div>
         </div>
         
-        {refreshments.length > 0 ? (
-          <Table columns={columns} data={refreshments} className="border-0 rounded-none shadow-none" />
+        <RecordFilters query={query} onQueryChange={setQuery} range={dateRange} onRangeChange={setDateRange} count={filteredRefreshments.length} />
+        {filteredRefreshments.length > 0 ? (
+          <Table columns={columns} data={filteredRefreshments} className="border-0 rounded-none shadow-none" />
         ) : (
-          <EmptyState icon={null} title="No refreshments recorded" description="Add your first refreshment above." />
+          <EmptyState icon={null} title={refreshments.length ? 'No matching records' : 'No refreshments recorded'} description={refreshments.length ? 'Try another date or search, or clear the filters.' : 'Add your first refreshment above.'} />
         )}
       </div>
 
+      {editRecord && <EditTransactionModal key={editRecord.id} record={editRecord} table="refreshments" onClose={() => setEditRecord(null)} />}
       <Modal 
         isOpen={!!deleteId} 
         title="Delete Refreshment?" 

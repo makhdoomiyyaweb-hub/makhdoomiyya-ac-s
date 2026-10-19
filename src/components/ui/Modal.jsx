@@ -31,7 +31,7 @@ export default function Modal({
       />
       
       {/* Modal Content */}
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-sm overflow-hidden z-10 animate-in fade-in zoom-in-95 duration-200">
+      <div role="dialog" aria-modal="true" aria-label={title} className="bg-white rounded-lg shadow-xl w-full max-w-sm max-h-[calc(100dvh-2rem)] overflow-y-auto z-10 animate-in fade-in zoom-in-95 duration-200">
         <div className="px-6 py-4 border-b border-border">
           <h3 className="text-lg font-semibold text-text">{title}</h3>
         </div>

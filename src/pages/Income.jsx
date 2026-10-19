@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useTransactions } from '../hooks/useTransactions';
 import { useReceiptNo } from '../hooks/useReceiptNo';
 import { useForm } from '../hooks/useForm';
@@ -22,12 +22,19 @@ import EmptyState from '../components/ui/EmptyState';
 import Receipt from '../components/documents/Receipt';
 import StatusBadge from '../components/ui/StatusBadge';
 import DropdownMenu from '../components/ui/DropdownMenu';
+import RecordFilters from '../components/ui/RecordFilters';
+import EditTransactionModal from '../components/ui/EditTransactionModal';
+import { matchesRecord } from '../utils/recordFilters';
 import jsPDF from 'jspdf';
 import * as htmlToImage from 'html-to-image';
 import { X, Share2, Download, Image, Printer, FileText } from 'lucide-react';
 
 export default function Income() {
+  const [query, setQuery] = useState('');
+  const [dateRange, setDateRange] = useState(null);
+  const [editRecord, setEditRecord] = useState(null);
   const { income, addIncome, deleteRecord, updatePaymentStatus, totalIncome } = useTransactions();
+  const filteredIncome = useMemo(() => income.filter(record => matchesRecord(record, query, dateRange)), [income, query, dateRange]);
   const { incrementReceiptNo } = useReceiptNo();
   
   const [deleteId, setDeleteId] = useState(null);
@@ -167,6 +174,7 @@ export default function Income() {
       label: 'Actions', 
       render: (r) => (
         <DropdownMenu>
+          <Button variant="ghost" onClick={() => setEditRecord(r)} className="w-full !justify-start !text-text">Edit</Button>
           <Button variant="secondary" onClick={() => setPreviewRecord(r)} className="w-full !justify-start !border-0 !shadow-none !bg-transparent hover:!bg-gray-100 !text-gray-700">
             Receipt
           </Button>
@@ -269,13 +277,15 @@ export default function Income() {
           </div>
         </div>
         
-        {income.length > 0 ? (
-          <Table columns={columns} data={income} className="border-0 rounded-none shadow-none" />
+        <RecordFilters query={query} onQueryChange={setQuery} range={dateRange} onRangeChange={setDateRange} count={filteredIncome.length} />
+        {filteredIncome.length > 0 ? (
+          <Table columns={columns} data={filteredIncome} className="border-0 rounded-none shadow-none" />
         ) : (
-          <EmptyState icon={null} title="No income recorded" description="Add your first income record above." />
+          <EmptyState icon={null} title={income.length ? 'No matching records' : 'No income recorded'} description={income.length ? 'Try another date or search, or clear the filters.' : 'Add your first income record above.'} />
         )}
       </div>
 
+      {editRecord && <EditTransactionModal key={editRecord.id} record={editRecord} table="income" onClose={() => setEditRecord(null)} />}
       <Modal 
         isOpen={!!deleteId} 
         title="Delete Income Record?" 

@@ -4,6 +4,7 @@ import db from '../utils/db';
 import { supabase } from '../utils/supabase';
 import toast from 'react-hot-toast';
 import { calculateTransactionSummary } from '../utils/accounting';
+import { settleSyncedRecord } from '../sync/engine';
 
 // Shared sync status to prevent multiple calls across components
 let globalSyncStatus = 'synced';
@@ -208,13 +209,13 @@ export function useTransactions() {
     setGlobalSyncStatus('syncing');
     try {
       if (!navigator.onLine) throw new Error('Offline');
-      const { synced, sync_status, is_deleted, ...recordToSync } = record;
-      const { error } = await supabase
+      const { synced, sync_status, is_deleted, sync_operation: _SYNC_OPERATION, ...recordToSync } = record;
+      const { data, error } = await supabase
         .from(table)
-        .upsert([recordToSync], { onConflict: 'id' });
+        .upsert([recordToSync], { onConflict: 'id' }).select('id,updated_at');
       if (error) throw error;
 
-      await db[table].update(record.id, { synced: true, sync_status: 'synced' });
+      await settleSyncedRecord(table, record, data?.[0]);
       setGlobalSyncStatus('synced');
     } catch (e) {
       console.warn(`Cloud sync paused for ${table}. Data saved locally.`, e);
@@ -246,21 +247,21 @@ export function useTransactions() {
   };
 
   const addIncome = async (record) => {
-    const newRecord = { ...record, paymentStatus: record.paymentStatus || 'Received', synced: false, sync_status: 'pending' };
+    const newRecord = { ...record, paymentStatus: record.paymentStatus || 'Received', synced: false, sync_status: 'pending', sync_operation: 'create' };
     await db.income.put(newRecord);
     invalidateMonthCache(record.date);
     await pushToCloud('income', newRecord);
   };
 
   const addExpense = async (record) => {
-    const newRecord = { ...record, paymentStatus: record.paymentStatus || 'Paid', synced: false, sync_status: 'pending' };
+    const newRecord = { ...record, paymentStatus: record.paymentStatus || 'Paid', synced: false, sync_status: 'pending', sync_operation: 'create' };
     await db.expenses.put(newRecord);
     invalidateMonthCache(record.date);
     await pushToCloud('expenses', newRecord);
   };
 
   const addRefreshment = async (record) => {
-    const newRecord = { ...record, paymentStatus: record.paymentStatus || 'Paid', synced: false, sync_status: 'pending' };
+    const newRecord = { ...record, paymentStatus: record.paymentStatus || 'Paid', synced: false, sync_status: 'pending', sync_operation: 'create' };
     await db.refreshments.put(newRecord);
     invalidateMonthCache(record.date);
     await pushToCloud('refreshments', newRecord);
@@ -321,6 +322,7 @@ export function useTransactions() {
     }
 
     await db[tableName].update(id, { paymentStatus: newStatus, synced: false, sync_status: 'pending' });
+    const snapshot = { ...record, paymentStatus: newStatus, synced: false, sync_status: 'pending' };
 
     setGlobalSyncStatus('syncing');
     try {
@@ -332,7 +334,7 @@ export function useTransactions() {
         .select();
       if (error) throw error;
       if (!data || data.length === 0) throw new Error('0 rows affected (record pending)');
-      await db[tableName].update(id, { synced: true, sync_status: 'synced' });
+      await settleSyncedRecord(tableName, snapshot, data[0]);
       setGlobalSyncStatus('synced');
     } catch (error) {
       console.warn('Update status error:', error);

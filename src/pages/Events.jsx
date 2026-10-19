@@ -11,8 +11,10 @@ import Modal from '../components/ui/Modal';
 import Input from '../components/ui/Input';
 import EmptyState from '../components/ui/EmptyState';
 import DropdownMenu from '../components/ui/DropdownMenu';
+import { matchesRecord } from '../utils/recordFilters';
 
 export default function Events() {
+  const [query, setQuery] = useState('');
   const { events, createEvent, archiveEvent, unarchiveEvent, deleteEvent } = useEvents();
   const navigate = useNavigate();
   
@@ -23,6 +25,7 @@ export default function Events() {
   const [description, setDescription] = useState('');
 
   const filteredEvents = events.filter(e => {
+    if (!matchesRecord(e, query)) return false;
     if (filter === 'active') return e.status === 'active';
     if (filter === 'archived') return e.status === 'archived';
     return true;
@@ -75,6 +78,7 @@ export default function Events() {
         ))}
       </div>
 
+      <Input name="event-search" type="search" aria-label="Search events" placeholder="Search events by name or description…" value={query} onChange={e => setQuery(e.target.value)} />
       {filteredEvents.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredEvents.map(event => (

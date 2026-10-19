@@ -4,6 +4,7 @@ import db from '../utils/db';
 import { supabase } from '../utils/supabase';
 import toast from 'react-hot-toast';
 import { calculateTransactionSummary } from '../utils/accounting';
+import { settleSyncedRecord } from '../sync/engine';
 
 export function useEvents() {
   const [syncStatus, setSyncStatus] = useState('synced');
@@ -21,13 +22,13 @@ export function useEvents() {
     setSyncStatus('syncing');
     try {
       if (!navigator.onLine) throw new Error('Offline');
-      const { synced, sync_status, is_deleted, ...recordToSync } = record;
-      const { error } = await supabase
+      const { synced, sync_status, is_deleted, sync_operation: _SYNC_OPERATION, ...recordToSync } = record;
+      const { data, error } = await supabase
         .from(table)
-        .upsert([recordToSync], { onConflict: 'id' });
+        .upsert([recordToSync], { onConflict: 'id' }).select('id,updated_at');
       if (error) throw error;
 
-      await db[table].update(record.id, { synced: true, sync_status: 'synced' });
+      await settleSyncedRecord(table, record, data?.[0]);
       setSyncStatus('synced');
     } catch (e) {
       console.warn(`Cloud sync paused for ${table}. Data saved locally.`, e);
@@ -103,6 +104,7 @@ export function useEvents() {
       paymentStatus: record.paymentStatus || 'Paid', 
       synced: false, 
       sync_status: 'pending',
+      sync_operation: 'create',
       created_at: new Date().toISOString()
     };
     await db.event_transactions.put(newRecord);
@@ -147,12 +149,14 @@ export function useEvents() {
     }
 
     await db.event_transactions.update(id, { paymentStatus: newStatus, synced: false, sync_status: 'pending' });
+    const snapshot = { ...record, paymentStatus: newStatus, synced: false, sync_status: 'pending' };
     setSyncStatus('syncing');
     try {
       if (navigator.onLine) {
-        const { error } = await supabase.from('event_transactions').update({ paymentStatus: newStatus }).eq('id', id);
+        const { data, error } = await supabase.from('event_transactions').update({ paymentStatus: newStatus }).eq('id', id).select('id,updated_at');
         if (error) throw error;
-        await db.event_transactions.update(id, { synced: true, sync_status: 'synced' });
+        if (!data?.length) throw new Error('0 rows affected (record pending)');
+        await settleSyncedRecord('event_transactions', snapshot, data[0]);
         setSyncStatus('synced');
       } else {
         throw new Error('Offline');

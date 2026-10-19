@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useTransactions } from '../hooks/useTransactions';
 import { useVoucherNo } from '../hooks/useVoucherNo';
 import { useForm } from '../hooks/useForm';
@@ -19,11 +19,17 @@ import Modal from '../components/ui/Modal';
 import EmptyState from '../components/ui/EmptyState';
 import StatusBadge from '../components/ui/StatusBadge';
 import DropdownMenu from '../components/ui/DropdownMenu';
+import RecordFilters from '../components/ui/RecordFilters';
+import EditTransactionModal from '../components/ui/EditTransactionModal';
+import { matchesRecord } from '../utils/recordFilters';
 import Voucher from '../components/documents/Voucher';
 import { exportVoucherAsPDF } from '../utils/exportPDF';
 import { X, Download, Printer } from 'lucide-react';
 
 export default function Expense() {
+  const [query, setQuery] = useState('');
+  const [dateRange, setDateRange] = useState(null);
+  const [editRecord, setEditRecord] = useState(null);
   const { expenses, addExpense, deleteRecord, updatePaymentStatus, totalExpenseAll } = useTransactions();
   const { incrementVoucherNo } = useVoucherNo();
   
@@ -93,12 +99,12 @@ export default function Expense() {
   const totalPaid = expenses.filter(e => e.paymentStatus === 'Paid').reduce((sum, e) => sum + e.amount, 0);
   const totalUnpaid = expenses.filter(e => e.paymentStatus === 'Unpaid' || e.paymentStatus === 'Pending').reduce((sum, e) => sum + e.amount, 0);
 
-  const filteredData = expenses.filter(e => {
+  const filteredData = useMemo(() => expenses.filter(e => {
     if (filter === 'Paid' && e.paymentStatus !== 'Paid') return false;
     if (filter === 'Pending' && e.paymentStatus !== 'Pending' && e.paymentStatus !== 'Unpaid') return false;
     if (catFilter !== 'All' && e.category !== catFilter) return false;
-    return true;
-  });
+    return matchesRecord(e, query, dateRange);
+  }), [expenses, filter, catFilter, query, dateRange]);
 
   const columns = [
     { key: 'date', label: 'Date', render: r => formatDate(r.date) },
@@ -113,6 +119,7 @@ export default function Expense() {
       label: 'Actions', 
       render: (r) => (
         <DropdownMenu>
+          <Button variant="ghost" onClick={() => setEditRecord(r)} className="w-full !justify-start !text-text">Edit</Button>
           <Button variant="secondary" onClick={() => setPaymentId(r)} className="w-full !justify-start !border-0 !shadow-none !bg-transparent hover:!bg-gray-100 !text-gray-700">
             {(r.paymentStatus === 'Paid' || !r.paymentStatus) ? 'Mark Pending' : 'Mark Paid'}
           </Button>
@@ -269,13 +276,15 @@ export default function Expense() {
           </div>
         </div>
         
+        <RecordFilters query={query} onQueryChange={setQuery} range={dateRange} onRangeChange={setDateRange} count={filteredData.length} />
         {filteredData.length > 0 ? (
           <Table columns={columns} data={filteredData} className="border-0 rounded-none shadow-none" />
         ) : (
-          <EmptyState icon={null} title="No expenses recorded" description="Add your first expense record above." />
+          <EmptyState icon={null} title={expenses.length ? 'No matching records' : 'No expenses recorded'} description={expenses.length ? 'Try another date or search, or clear the filters.' : 'Add your first expense record above.'} />
         )}
       </div>
 
+      {editRecord && <EditTransactionModal key={editRecord.id} record={editRecord} table="expenses" onClose={() => setEditRecord(null)} />}
       <Modal 
         isOpen={!!deleteId} 
         title="Delete Expense Record?" 

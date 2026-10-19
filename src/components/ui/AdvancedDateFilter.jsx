@@ -97,13 +97,14 @@ export default function AdvancedDateFilter({ value, onChange }) {
     // Add empty slots for days before the 1st of the month
     const startDay = start.getDay();
     const emptyDays = Array.from({ length: startDay }).map((_, i) => (
-      <div key={`empty-${i}`} className="w-10 h-10" />
+      <div key={`empty-${i}`} className="w-full h-10" />
     ));
 
     return (
       <div className="mt-4" onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
         <div className="flex items-center justify-between mb-4">
           <button 
+            aria-label="Previous calendar month"
             onClick={() => setViewMonth(subMonths(viewMonth, 1))}
             className="p-2 hover:bg-gray-100 rounded-full transition-colors"
           >
@@ -123,6 +124,7 @@ export default function AdvancedDateFilter({ value, onChange }) {
             {format(viewMonth, 'MMMM yyyy')}
           </button>
           <button 
+            aria-label="Next calendar month"
             onClick={() => setViewMonth(addMonths(viewMonth, 1))}
             className="p-2 hover:bg-gray-100 rounded-full transition-colors"
           >
@@ -130,6 +132,13 @@ export default function AdvancedDateFilter({ value, onChange }) {
           </button>
         </div>
 
+        <div className="flex justify-end mb-2">
+          <label className="text-sm text-muted flex items-center gap-2">Year
+            <input aria-label="Calendar year" type="number" min="1" max="9999" value={viewMonth.getFullYear()}
+              onChange={e => { const year = Number(e.target.value); if (year >= 1 && year <= 9999) { const next = new Date(viewMonth); next.setFullYear(year, viewMonth.getMonth(), 1); setViewMonth(next); } }}
+              className="w-20 px-2 py-1.5 border border-border rounded-md text-text" />
+          </label>
+        </div>
         <div className="grid grid-cols-7 gap-1 text-center mb-2">
           {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => (
             <div key={d} className="text-xs font-semibold text-muted py-1">{d}</div>
@@ -145,7 +154,7 @@ export default function AdvancedDateFilter({ value, onChange }) {
               <button
                 key={day.toISOString()}
                 onClick={() => handleDayClick(day)}
-                className={`w-10 h-10 rounded-full flex items-center justify-center text-sm transition-all
+                className={`w-full h-10 rounded-full flex items-center justify-center text-sm transition-all
                   ${isSelected ? 'bg-primary text-white font-bold shadow-md transform scale-110' : 
                     isTodayDate ? 'border-2 border-primary text-primary font-bold' : 
                     'text-text hover:bg-primary/10 hover:text-primary'}
@@ -174,7 +183,7 @@ export default function AdvancedDateFilter({ value, onChange }) {
       </button>
 
       {isOpen && (
-        <Modal isOpen={isOpen} onClose={() => setIsOpen(false)} title="Select Date Range">
+        <Modal isOpen={isOpen} onCancel={() => setIsOpen(false)} title="Select Date">
           <div className="grid grid-cols-2 gap-2 mb-6">
             {['This Month', 'Last Month', 'This Year', 'Last 7 Days'].map(preset => (
               <button
