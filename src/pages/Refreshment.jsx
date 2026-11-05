@@ -30,11 +30,13 @@ export default function Refreshment() {
   const [paymentId, setPaymentId] = useState(null);
 
   const form = useForm({
+    dateStorageKey: 'refreshment',
     initialValues: {
       date: todayISO(),
       item: '',
       quantity: 1,
       amount: '',
+      remarks: '',
       notes: '',
       paymentStatus: ''
     },
@@ -92,10 +94,10 @@ export default function Refreshment() {
         </div>
         <form onSubmit={form.handleSubmit} className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-6">
+            <Input label="Amount (₹)" name="amount" type="number" min="1" required value={form.values.amount} onChange={form.handleChange} error={form.errors.amount} />
             <DatePicker label="Date" name="date" required value={form.values.date} onChange={form.handleChange} error={form.errors.date} />
             <Select label="Item" name="item" options={REFRESHMENT_ITEMS} required value={form.values.item} onChange={form.handleChange} error={form.errors.item} />
             <Input label="Qty" name="quantity" type="number" min="1" required value={form.values.quantity} onChange={form.handleChange} error={form.errors.quantity} />
-            <Input label="Amount (₹)" name="amount" type="number" min="1" required value={form.values.amount} onChange={form.handleChange} error={form.errors.amount} />
             <div className="flex flex-col gap-1">
               <Select 
                 label="Payment Status" 
@@ -107,6 +109,7 @@ export default function Refreshment() {
                 error={form.errors.paymentStatus}
               />
             </div>
+            <Input label="Remarks (Optional)" name="remarks" value={form.values.remarks} onChange={form.handleChange} />
             <Input label="Notes" name="notes" value={form.values.notes} onChange={form.handleChange} />
           </div>
           <div className="flex justify-end pt-4 border-t border-border">

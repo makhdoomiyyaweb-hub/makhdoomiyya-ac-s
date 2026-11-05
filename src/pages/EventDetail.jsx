@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useEvents, useEventDetail, useEventCategories } from '../hooks/useEvents';
-import { formatINR, formatDate, todayISO } from '../utils/formatters';
+import { formatINR, formatDate } from '../utils/formatters';
 import { newId } from '../utils/uuid';
 import toast from 'react-hot-toast';
 
@@ -19,6 +19,7 @@ import EmptyState from '../components/ui/EmptyState';
 import RecordFilters from '../components/ui/RecordFilters';
 import EditTransactionModal from '../components/ui/EditTransactionModal';
 import { matchesRecord } from '../utils/recordFilters';
+import { useEntryDate } from '../hooks/useEntryDate';
 
 import { ArrowLeft, TrendingUp, TrendingDown, Scale, Printer, MoreVertical, Trash2, CheckCircle, XCircle, CalendarDays, X } from 'lucide-react';
 
@@ -37,11 +38,12 @@ export default function EventDetail() {
 
   const [printData, setPrintData] = useState(null);
   
-  const [date, setDate] = useState(todayISO());
+  const [date, setDate] = useEntryDate(`event:${eventId}:${activeModal || 'income'}`);
   const [category, setCategory] = useState('');
   const [amount, setAmount] = useState('');
   const [person, setPerson] = useState(''); // payerName or paidTo
   const [notes, setNotes] = useState('');
+  const [remarks, setRemarks] = useState('');
   const [paymentStatus, setPaymentStatus] = useState('Paid');
 
   useEffect(() => {
@@ -73,6 +75,7 @@ export default function EventDetail() {
         category,
         amount: Number(amount),
         notes,
+        remarks,
       };
 
       if (activeModal === 'income') {
@@ -99,6 +102,7 @@ export default function EventDetail() {
     setAmount('');
     setPerson('');
     setNotes('');
+    setRemarks('');
     setPaymentStatus('Paid');
   };
 
@@ -269,10 +273,12 @@ export default function EventDetail() {
       {editRecord && <EditTransactionModal key={editRecord.id} record={editRecord} table="event_transactions" categories={editRecord.type === 'income' ? incomeCategories : expenseCategories} onClose={() => setEditRecord(null)} />}
       <Modal isOpen={!!activeModal} onClose={closeModal} title={`Add Event ${activeModal === 'income' ? 'Income' : 'Expense'}`}>
         <form onSubmit={handleAddSubmit} className="space-y-4 mt-4">
-          <DatePicker label="Date" value={date} onChange={setDate} required />
+          <Input label="Amount (₹)" name="event-amount" type="number" min="0" step="0.01" value={amount} onChange={e => setAmount(e.target.value)} required />
+          <DatePicker label="Date" name="event-date" value={date} onChange={e => setDate(e.target.value)} required />
             <div>
               <Input
                 label="Category"
+                name="event-category"
                 value={category}
                 onChange={e => setCategory(e.target.value.toUpperCase())}
                 placeholder="Type or select a category..."
@@ -301,28 +307,22 @@ export default function EventDetail() {
                 ))}
               </div>
             </div>
-          <Input
-            label={activeModal === 'income' ? 'Received From' : 'Paid To'}
-            value={person}
-            onChange={e => setPerson(e.target.value)}
-            placeholder="Name..."
-          />
-          <Input
-            label="Amount (₹)"
-            type="number"
-            min="0"
-            step="0.01"
-            value={amount}
-            onChange={e => setAmount(e.target.value)}
-            required
-          />
           <Select
             label="Status"
+            name="event-status"
             value={paymentStatus}
             onChange={e => setPaymentStatus(e.target.value)}
             options={activeModal === 'income' ? ['Paid', 'Pending'] : ['Paid', 'Pending']}
           />
-          <Input label="Notes" value={notes} onChange={e => setNotes(e.target.value)} placeholder="Optional details" />
+          <Input label="Remarks (Optional)" name="event-remarks" value={remarks} onChange={e => setRemarks(e.target.value)} />
+          <Input
+            label={activeModal === 'income' ? 'Received From' : 'Paid To'}
+            name="event-person"
+            value={person}
+            onChange={e => setPerson(e.target.value)}
+            placeholder="Name..."
+          />
+          <Input label="Notes" name="event-notes" value={notes} onChange={e => setNotes(e.target.value)} placeholder="Optional details" />
           <div className="pt-4 flex justify-end gap-3">
             <Button variant="secondary" onClick={closeModal} type="button">Cancel</Button>
             <Button type="submit">Save</Button>

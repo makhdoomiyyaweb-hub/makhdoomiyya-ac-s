@@ -8,6 +8,7 @@ export default function Modal({
   message, 
   onConfirm, 
   onCancel, 
+  onClose,
   confirmLabel = 'Confirm', 
   cancelLabel = 'Cancel',
   confirmVariant = 'primary',
@@ -27,7 +28,7 @@ export default function Modal({
       {/* Backdrop */}
       <div 
         className="absolute inset-0 bg-black/60 transition-opacity" 
-        onClick={onCancel}
+        onClick={onCancel || onClose}
       />
       
       {/* Modal Content */}

@@ -53,6 +53,7 @@ export default function Income() {
   };
 
   const form = useForm({
+    dateStorageKey: 'income',
     initialValues: {
       date: todayISO(),
       category: '',
@@ -62,6 +63,7 @@ export default function Income() {
       manualReceiptNo: '',
       amount: '',
       amountInWords: '',
+      remarks: '',
       paymentStatus: 'Received',
     },
     validate: validators.income,
@@ -230,6 +232,7 @@ export default function Income() {
         </div>
         <form onSubmit={form.handleSubmit} className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+            <Input label="Amount (₹)" name="amount" type="number" min="1" required value={form.values.amount} onChange={handleAmountChange} error={form.errors.amount} />
             <DatePicker label="Date" name="date" required value={form.values.date} onChange={form.handleChange} error={form.errors.date} />
             <div className="flex flex-col gap-1">
               <Input 
@@ -245,13 +248,13 @@ export default function Income() {
                 {INCOME_CATEGORIES.map(cat => <option key={cat} value={cat} />)}
               </datalist>
             </div>
+            <Input label="Remarks (Optional)" name="remarks" value={form.values.remarks} onChange={form.handleChange} />
             <Input label="Manual Receipt No" name="manualReceiptNo" value={form.values.manualReceiptNo} onChange={form.handleChange} />
             
             <Input label="Payer Name" name="payerName" value={form.values.payerName} onChange={form.handleChange} error={form.errors.payerName} />
             <Input label="Address" name="address" value={form.values.address} onChange={form.handleChange} />
             <Input label="Contact No" name="contactNo" value={form.values.contactNo} onChange={form.handleChange} />
             
-            <Input label="Amount (₹)" name="amount" type="number" min="1" required value={form.values.amount} onChange={handleAmountChange} error={form.errors.amount} />
             <div className="lg:col-span-1">
               <Input label="Amount in Words" name="amountInWords" value={form.values.amountInWords} onChange={form.handleChange} />
             </div>

@@ -1,11 +1,15 @@
 import { useState } from 'react';
+import { localToday, readEntryDate, writeEntryDate } from '../utils/entryDate';
 
-export function useForm({ initialValues, validate, onSubmit }) {
-  const [values, setValues] = useState(initialValues);
+export function useForm({ initialValues, validate, onSubmit, dateStorageKey }) {
+  const [values, setValues] = useState(() => dateStorageKey
+    ? { ...initialValues, date: readEntryDate(dateStorageKey, localToday()) }
+    : initialValues);
   const [errors, setErrors] = useState({});
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    if (name === 'date' && dateStorageKey) writeEntryDate(dateStorageKey, value);
     setValues({
       ...values,
       [name]: value,
@@ -30,7 +34,7 @@ export function useForm({ initialValues, validate, onSubmit }) {
   };
 
   const resetForm = () => {
-    setValues(initialValues);
+    setValues(previous => dateStorageKey ? { ...initialValues, date: previous.date } : initialValues);
     setErrors({});
   };
 

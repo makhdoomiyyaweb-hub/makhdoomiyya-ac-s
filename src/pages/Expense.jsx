@@ -41,6 +41,7 @@ export default function Expense() {
   const [catFilter, setCatFilter] = useState('All'); 
 
   const form = useForm({
+    dateStorageKey: 'expense',
     initialValues: {
       date: todayISO(),
       category: '',
@@ -192,6 +193,7 @@ export default function Expense() {
         </div>
         <form onSubmit={form.handleSubmit} className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+            <Input label="Amount (₹)" name="amount" type="number" min="1" required value={form.values.amount} onChange={handleAmountChange} error={form.errors.amount} />
             <DatePicker label="Date" name="date" required value={form.values.date} onChange={form.handleChange} error={form.errors.date} />
             <div className="flex flex-col gap-1">
               <Input 
@@ -207,6 +209,11 @@ export default function Expense() {
                 {EXPENSE_CATEGORIES.map(cat => <option key={cat} value={cat} />)}
               </datalist>
             </div>
+            <div className="md:col-span-2 lg:col-span-3">
+              <Input label="Being (Purpose)" name="being" required value={form.values.being} onChange={form.handleChange} error={form.errors.being} />
+            </div>
+            <Select label="Payment Status" name="paymentStatus" options={PAYMENT_STATUS} value={form.values.paymentStatus} onChange={form.handleChange} />
+            <Input label="Remarks (Optional)" name="remarks" value={form.values.remarks} onChange={form.handleChange} />
             <Input label="Manual Voucher No" name="manualVoucherNo" value={form.values.manualVoucherNo} onChange={form.handleChange} />
             <div className="flex flex-col gap-1">
               <Input label="Paid To" name="paidTo" value={form.values.paidTo} onChange={form.handleChange} error={form.errors.paidTo} />
@@ -224,19 +231,12 @@ export default function Expense() {
               </div>
             </div>
             
-            <div className="md:col-span-2 lg:col-span-3">
-              <Input label="Being (Purpose)" name="being" required value={form.values.being} onChange={form.handleChange} error={form.errors.being} />
-            </div>
-            
-            <Input label="Amount (₹)" name="amount" type="number" min="1" required value={form.values.amount} onChange={handleAmountChange} error={form.errors.amount} />
             <div className="md:col-span-2">
               <Input label="Amount in Words" name="amountInWords" value={form.values.amountInWords} onChange={form.handleChange} />
             </div>
 
             <Select label="Payment Mode" name="paymentMode" options={PAYMENT_MODES} value={form.values.paymentMode} onChange={form.handleChange} />
-            <Select label="Payment Status" name="paymentStatus" options={PAYMENT_STATUS} value={form.values.paymentStatus} onChange={form.handleChange} />
             <Input label="Approved By (Optional)" name="approvedBy" value={form.values.approvedBy} onChange={form.handleChange} />
-            <Input label="Remarks (Optional)" name="remarks" value={form.values.remarks} onChange={form.handleChange} />
           </div>
           <div className="flex justify-end pt-4 border-t border-border">
             <Button type="button" variant="ghost" onClick={form.resetForm} className="mr-3">Clear</Button>

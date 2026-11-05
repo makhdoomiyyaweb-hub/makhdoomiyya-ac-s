@@ -1,5 +1,31 @@
 # React + Vite
 
+## Amount-first forms, entry dates and remarks
+
+Income, Expense, Refreshment and Event Income/Expense forms place Amount first,
+followed by their existing required fields, optional Remarks and other optional
+fields. Remarks and Notes are separate. Existing validation, numbering, status
+defaults, totals and print layouts remain unchanged.
+
+Each add form remembers its selected date in `sessionStorage`, independently by
+form and by event ID/transaction type. Save, Clear, modal close/reopen, navigation
+and reload retain the selected date in the same browser session; a new session
+defaults to the local current date. List filters and Edit do not affect it.
+
+Remarks is stored in the existing local Dexie record and travels through the
+existing sync path; no endpoint or Dexie index is added. The additive migration
+`supabase/migrations/20261105042914_add_optional_transaction_remarks.sql` adds
+nullable columns only and does not modify existing rows. Verify the target
+production schema/migration history before future schema changes. On 2026-11-05,
+read-only zero-row REST checks resolved `remarks` on all four production tables
+(HTTP 200); the migration ledger itself was not checked. The local mocked browser
+checks do not verify production RLS or sync permissions.
+
+Run the focused unit checks with `node --test tests/entry-date.test.mjs
+tests/report-date-order.test.mjs tests/record-filters.test.mjs`. With a local
+development server on port 5190, run `node tests/entry-forms.browser.cjs`; it
+intercepts external requests and uses a disposable browser profile.
+
 ## Transaction filters and editing
 
 Income, Expense, Refreshment and per-event transaction lists support local date

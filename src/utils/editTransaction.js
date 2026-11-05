@@ -6,10 +6,10 @@ import { sameRecord } from './recordFilters';
 import { syncPendingRecords } from '../sync/engine';
 
 export const EDIT_FIELDS = {
-  income: ['date', 'category', 'payerName', 'address', 'contactNo', 'manualReceiptNo', 'amount', 'amountInWords', 'paymentStatus'],
+  income: ['date', 'category', 'payerName', 'address', 'contactNo', 'manualReceiptNo', 'amount', 'amountInWords', 'paymentStatus', 'remarks'],
   expenses: ['date', 'category', 'paidTo', 'being', 'manualVoucherNo', 'amount', 'amountInWords', 'paymentMode', 'paymentStatus', 'approvedBy', 'remarks'],
-  refreshments: ['date', 'item', 'quantity', 'amount', 'notes', 'paymentStatus'],
-  event_transactions: ['date', 'category', 'payerName', 'paidTo', 'amount', 'notes', 'paymentStatus'],
+  refreshments: ['date', 'item', 'quantity', 'amount', 'paymentStatus', 'remarks', 'notes'],
+  event_transactions: ['date', 'category', 'payerName', 'paidTo', 'amount', 'paymentStatus', 'remarks', 'notes'],
 };
 
 export function validateEdit(table, values, type) {
