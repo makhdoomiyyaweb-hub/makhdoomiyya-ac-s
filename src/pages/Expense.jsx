@@ -38,6 +38,7 @@ export default function Expense() {
   const [previewRecord, setPreviewRecord] = useState(null);
   const [filter, setFilter] = useState('All'); // All | Paid | Pending
   const [activeTab, setActiveTab] = useState('add'); // 'add' | 'recent'
+  const [showOptionalFields, setShowOptionalFields] = useState(false);
   const [catFilter, setCatFilter] = useState('All'); 
 
   const form = useForm({
@@ -191,10 +192,26 @@ export default function Expense() {
         <div className="px-6 py-4 border-b border-border bg-gray-50">
           <h2 className="text-base font-semibold text-text">Add New Expense</h2>
         </div>
-        <form onSubmit={form.handleSubmit} className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
-            <Input label="Amount (₹)" name="amount" type="number" min="1" required value={form.values.amount} onChange={handleAmountChange} error={form.errors.amount} />
+        <form onSubmit={form.handleSubmit} className="p-4 sm:p-6">
+          <div className="flex flex-wrap items-center gap-2 mb-5 pb-4 border-b border-border">
+            <Button
+              type="button"
+              variant="secondary"
+              aria-controls="expense-optional-fields"
+              aria-expanded={showOptionalFields}
+              onClick={() => setShowOptionalFields(value => !value)}
+              className="min-h-11"
+            >
+              {showOptionalFields ? 'Fewer fields' : 'More fields'}
+            </Button>
+            <div className="flex gap-2 ml-auto">
+              <Button type="button" variant="ghost" onClick={form.resetForm} className="min-h-11">Clear</Button>
+              <Button type="submit" variant="primary" className="min-h-11">Save Expense</Button>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-6">
             <DatePicker label="Date" name="date" required value={form.values.date} onChange={form.handleChange} error={form.errors.date} />
+            <Input label="Amount (₹)" name="amount" type="number" min="1" required value={form.values.amount} onChange={handleAmountChange} error={form.errors.amount} />
             <div className="flex flex-col gap-1">
               <Input 
                 label="Category" 
@@ -214,6 +231,8 @@ export default function Expense() {
             </div>
             <Select label="Payment Status" name="paymentStatus" options={PAYMENT_STATUS} value={form.values.paymentStatus} onChange={form.handleChange} />
             <Input label="Remarks (Optional)" name="remarks" value={form.values.remarks} onChange={form.handleChange} />
+          </div>
+          <div id="expense-optional-fields" hidden={!showOptionalFields} className={`${showOptionalFields ? 'grid' : '!hidden'} grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6`}>
             <Input label="Manual Voucher No" name="manualVoucherNo" value={form.values.manualVoucherNo} onChange={form.handleChange} />
             <div className="flex flex-col gap-1">
               <Input label="Paid To" name="paidTo" value={form.values.paidTo} onChange={form.handleChange} error={form.errors.paidTo} />
@@ -237,10 +256,6 @@ export default function Expense() {
 
             <Select label="Payment Mode" name="paymentMode" options={PAYMENT_MODES} value={form.values.paymentMode} onChange={form.handleChange} />
             <Input label="Approved By (Optional)" name="approvedBy" value={form.values.approvedBy} onChange={form.handleChange} />
-          </div>
-          <div className="flex justify-end pt-4 border-t border-border">
-            <Button type="button" variant="ghost" onClick={form.resetForm} className="mr-3">Clear</Button>
-            <Button type="submit" variant="primary">Save Expense</Button>
           </div>
         </form>
       </div>

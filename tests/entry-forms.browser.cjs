@@ -85,8 +85,8 @@ async function run() {
       });
     }
     const specs = [
-      { route: 'income', table: 'income', date: '2026-06-01', order: ['amount', 'date', 'category', 'remarks'], category: 'DONATION' },
-      { route: 'expense', table: 'expenses', date: '2026-06-02', order: ['amount', 'date', 'category', 'being', 'paymentStatus', 'remarks'], category: 'FOOD' },
+      { route: 'income', table: 'income', date: '2026-06-01', order: ['date', 'amount', 'category', 'remarks'], category: 'DONATION' },
+      { route: 'expense', table: 'expenses', date: '2026-06-02', order: ['date', 'amount', 'category', 'being', 'paymentStatus', 'remarks'], category: 'FOOD' },
       { route: 'refreshment', table: 'refreshments', date: '2026-06-03', order: ['amount', 'date', 'item', 'quantity', 'paymentStatus', 'remarks'] },
     ];
     for (const spec of specs) {
@@ -95,6 +95,28 @@ async function run() {
       await page.waitForSelector('form input[name="amount"]');
       const order = await page.$eval(visibleForm, form => [...form.querySelectorAll('input[name],select[name]')].map(el => el.name));
       assert.deepEqual(order.slice(0, spec.order.length), spec.order);
+      if (spec.route !== 'refreshment') {
+        assert.equal(await page.$eval('form button[aria-controls]', button => button.getAttribute('aria-expanded')), 'false', 'optional fields start collapsed');
+        const optionalName = spec.route === 'income' ? 'manualReceiptNo' : 'manualVoucherNo';
+        assert.equal(await page.$eval(`form input[name="${optionalName}"]`, input => input.closest('[id$="optional-fields"]').hidden), true, 'optional inputs start hidden');
+        assert.equal(await page.$eval(`form input[name="${optionalName}"]`, input => input.getBoundingClientRect().height), 0, 'optional inputs are visually hidden initially');
+        assert.equal(await page.$$eval('form input[name="remarks"]', inputs => inputs.length), 1, 'remarks appears once');
+        const actionOrder = await page.$eval('form', form => {
+          const submit = form.querySelector('button[type="submit"]');
+          const firstField = form.querySelector('input[name="date"]').parentElement.parentElement;
+          return submit.compareDocumentPosition(firstField) & Node.DOCUMENT_POSITION_FOLLOWING;
+        });
+        assert.ok(actionOrder, 'save actions precede form fields');
+        await page.click('form button[aria-controls]');
+        assert.equal(await page.$eval('form button[aria-controls]', button => button.getAttribute('aria-expanded')), 'true');
+        assert.equal(await page.$eval(`form input[name="${optionalName}"]`, input => input.closest('[id$="optional-fields"]').hidden), false, 'optional inputs appear after expanding');
+        assert.ok(await page.$eval(`form input[name="${optionalName}"]`, input => input.getBoundingClientRect().height > 0), 'optional inputs become visible after expanding');
+        await fill(optionalName, 'Optional value retained');
+        await page.click('form button[aria-controls]');
+        await page.click('form button[aria-controls]');
+        assert.equal(await page.$eval(`form input[name="${optionalName}"]`, input => input.value), 'Optional value retained', 'collapsing and reopening retains optional values');
+        await page.click('form button[aria-controls]');
+      }
       assert.equal(await dateValue(), spec.date);
       await fill('amount', '125');
       if (spec.category) await fill('category', spec.category);
@@ -194,11 +216,16 @@ async function run() {
         await route(spec.route);
         const info = await page.$eval('form input[name="amount"]', el => {
           const rect = el.getBoundingClientRect();
-          const first = el.form.querySelector('input:not([type="hidden"]),select,textarea');
-          return { first: first.name, fits: rect.left >= 0 && rect.right <= innerWidth };
+          const first = el.form.querySelector('input[name="date"]');
+          const formRect = el.form.getBoundingClientRect();
+          return { first: first.name, fits: rect.left >= 0 && rect.right <= innerWidth, formFits: el.form.scrollWidth <= el.form.clientWidth, toolbarFits: [...el.form.querySelectorAll('button')].filter(button => ['Save Income', 'Save Expense', 'Clear', 'More fields'].includes(button.textContent.trim())).every(button => { const r = button.getBoundingClientRect(); return r.left >= formRect.left && r.right <= formRect.right; }) };
         });
-        assert.equal(info.first, 'amount');
+        assert.equal(info.first, 'date');
         assert.equal(info.fits, true, `${spec.route} fits ${width}`);
+        if (spec.route !== 'refreshment') {
+          assert.equal(info.formFits, true, `${spec.route} form has no horizontal overflow at ${width}`);
+          assert.equal(info.toolbarFits, true, `${spec.route} action toolbar fits at ${width}`);
+        }
         if (width === 375 || width === 1440) await page.screenshot({ path: `output/entry-forms-qa/${spec.route}-${width}.png` });
       }
       for (const type of ['income', 'expense']) {
@@ -209,7 +236,7 @@ async function run() {
       }
     }
     assert.deepEqual(errors, []);
-    console.log(JSON.stringify({ passed: true, forms: 5, widths: [320, 375, 768, 1024, 1440], checks: ['amount-first DOM order', 'required-only save', 'optional remarks', 'save/clear/reload date retention', 'event/type date isolation', 'calendar day selection', 'remarks cloud payload', 'same-ID remarks edit'] }));
+    console.log(JSON.stringify({ passed: true, forms: 5, widths: [320, 375, 768, 1024, 1440], checks: ['date-first Income/Expense order', 'collapsed optional fields', 'top save/clear actions', 'responsive form and toolbar fit', 'required-only save', 'optional remarks', 'save/clear/reload date retention', 'event/type date isolation', 'calendar day selection', 'remarks cloud payload', 'same-ID remarks edit'] }));
   } finally { await browser.close(); }
 }
 run().catch(error => { console.error(error); process.exitCode = 1; });

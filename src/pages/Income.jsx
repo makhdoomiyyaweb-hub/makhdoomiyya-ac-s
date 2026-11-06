@@ -43,6 +43,7 @@ export default function Income() {
   const [whatsappPromptRecord, setWhatsappPromptRecord] = useState(null);
   const [isExporting, setIsExporting] = useState(false);
   const [activeTab, setActiveTab] = useState('add'); // 'add' | 'recent'
+  const [showOptionalFields, setShowOptionalFields] = useState(false);
 
   const handleWhatsAppShare = (record) => {
     if (!record || !record.contactNo) return;
@@ -230,10 +231,26 @@ export default function Income() {
         <div className="px-6 py-4 border-b border-border bg-gray-50">
           <h2 className="text-base font-semibold text-text">Add New Income</h2>
         </div>
-        <form onSubmit={form.handleSubmit} className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
-            <Input label="Amount (₹)" name="amount" type="number" min="1" required value={form.values.amount} onChange={handleAmountChange} error={form.errors.amount} />
+        <form onSubmit={form.handleSubmit} className="p-4 sm:p-6">
+          <div className="flex flex-wrap items-center gap-2 mb-5 pb-4 border-b border-border">
+            <Button
+              type="button"
+              variant="secondary"
+              aria-controls="income-optional-fields"
+              aria-expanded={showOptionalFields}
+              onClick={() => setShowOptionalFields(value => !value)}
+              className="min-h-11"
+            >
+              {showOptionalFields ? 'Fewer fields' : 'More fields'}
+            </Button>
+            <div className="flex gap-2 ml-auto">
+              <Button type="button" variant="ghost" onClick={form.resetForm} className="min-h-11">Clear</Button>
+              <Button type="submit" variant="primary" className="min-h-11">Save Income</Button>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-6">
             <DatePicker label="Date" name="date" required value={form.values.date} onChange={form.handleChange} error={form.errors.date} />
+            <Input label="Amount (₹)" name="amount" type="number" min="1" required value={form.values.amount} onChange={handleAmountChange} error={form.errors.amount} />
             <div className="flex flex-col gap-1">
               <Input 
                 label="Category" 
@@ -249,19 +266,13 @@ export default function Income() {
               </datalist>
             </div>
             <Input label="Remarks (Optional)" name="remarks" value={form.values.remarks} onChange={form.handleChange} />
+          </div>
+          <div id="income-optional-fields" hidden={!showOptionalFields} className={`${showOptionalFields ? 'grid' : '!hidden'} grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6`}>
             <Input label="Manual Receipt No" name="manualReceiptNo" value={form.values.manualReceiptNo} onChange={form.handleChange} />
-            
             <Input label="Payer Name" name="payerName" value={form.values.payerName} onChange={form.handleChange} error={form.errors.payerName} />
             <Input label="Address" name="address" value={form.values.address} onChange={form.handleChange} />
             <Input label="Contact No" name="contactNo" value={form.values.contactNo} onChange={form.handleChange} />
-            
-            <div className="lg:col-span-1">
-              <Input label="Amount in Words" name="amountInWords" value={form.values.amountInWords} onChange={form.handleChange} />
-            </div>
-          </div>
-          <div className="flex justify-end pt-4 border-t border-border">
-            <Button type="button" variant="ghost" onClick={form.resetForm} className="mr-3">Clear</Button>
-            <Button type="submit" variant="primary">Save Income</Button>
+            <Input label="Amount in Words" name="amountInWords" value={form.values.amountInWords} onChange={form.handleChange} />
           </div>
         </form>
       </div>
